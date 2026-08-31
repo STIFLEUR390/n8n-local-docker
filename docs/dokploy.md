@@ -65,36 +65,14 @@ DB_POSTGRESDB_SCHEMA=public
 
 ---
 
-## 3. Monter la configuration SearXNG
+## 3. SearXNG — configuration automatique
 
-Dokploy nettoie le répertoire du repo à chaque déploiement (`git clone`). Les montages type `./searxng-settings.yml` ne survivent pas.
+Le `docker-compose.dokploy.yml` utilise un **conteneur init** (`searxng-init`, busybox) qui crée automatiquement le fichier `settings.yml` avec l'API JSON activée dans un volume named `searxng-data`. **Aucune action manuelle n'est nécessaire** pour SearXNG.
 
-### Option A — Dossier `../files` (recommandé)
+Si tu veux personnaliser la config SearXNG, tu peux :
 
-Crée le fichier dans le dossier `files` de Dokploy (persistant entre déploiements) :
-
-```bash
-# Sur le VPS, dans le répertoire de Dokploy pour ton app :
-mkdir -p ../files
-cat > ../files/searxng-settings.yml <<'EOF'
-use_default_settings: true
-search:
-  formats:
-    - html
-    - json
-EOF
-```
-
-> Le montage dans `docker-compose.dokploy.yml` est déjà configuré :
-> `../files/searxng-settings.yml:/etc/searxng/settings.yml:ro`
-
-### Option B — File Mounts (UI Dokploy)
-
-1. Advanced → **Mounts** → Add Mount
-2. Type : File
-3. Contenu : le YAML ci-dessus
-4. Container Path : `/etc/searxng/settings.yml`
-5. Service : `searxng`
+- **Option A** : Modifier le `command` du service `searxng-init` dans le compose (le YAML est inliné)
+- **Option B** : Monter un fichier via **Advanced → Mounts** dans l'UI Dokploy (File Mount, path `/etc/searxng/settings.yml`, service `searxng`)
 
 ---
 
@@ -226,7 +204,7 @@ docker-compose.dokploy.yml
     ├─► sandbox-certs (runs once → TLS certs)
     ├─► sandbox-api (control plane, healthcheck)
     ├─► sandbox-runner-1 (privileged DinD)
-    ├─► searxng (web search local)
+    ├─► searxng-init (busybox → crée settings.yml) ──► searxng (web search)
     ├─► postgres:17-alpine (volume db-storage)
     └─► n8n (via Traefik → ton domaine)
 ```
@@ -237,9 +215,65 @@ docker-compose.dokploy.yml
 
 | Sujet | Détail |
 |---|---|
-| **Docker-in-Docker (sandbox-runner-1)** | Le runner tourne en `privileged: true`. Le VPS doit autoriser le mode privileged (cas standard sur un VPS dédié). Si tu utilises un hébergement restreint (ex. runners CI), cela ne fonctionnera pas. |
+| **Docker-in-Docker (sandbox-runner-1)** | Le runner tourne en `privileged: true`. Le VPS doit autoriser le mode privileged (cas standard sur un VPS dédié). |
 | **RAM** | Le sandbox DinD consomme plus qu'un conteneur classique. Prévoir ≥ 4 Go. |
-| **searxng-settings.yml** | Monter via `../files/` ou File Mounts — JAMAIS via `./` (git clone nettoie le répertoire). |
+| **SearXNG** | Le settings.yml est créé automatiquement par le conteneur init `searxng-init`. Aucune action manuelle requise. |
 | **Variables d'environnement** | Les variables de l'UI Dokploy sont écrites dans `.env` mais **ne sont pas injectées** automatiquement dans les conteneurs. Le compose les récupère via `${...}`. |
 | **Ports** | Ne jamais exposer de ports dans le compose Dokploy — Traefik gère le routing. |
 | **Postgres** | Migration SQLite → PostgreSQL : automatique au premier démarrage. Migration majeure Postgres (16→17) : nécessite `pg_dumpall` + volume neuf. |
+
+---
+
+## 11. Dépannage
+
+### SearXNG : "settings.yml is not a valid file, exiting..."
+
+**Cause** : L'ancien compose montait `../files/searxng-settings.yml` en bind mount. Si le fichier n'existait pas, Docker créait un dossier à sa place.
+
+**Fix** : Le compose utilise maintenant un conteneur init + volume named. Pull les changements et redeplie :
+
+```bash
+# Pull + redeploy
+git pull origin main
+docker compose -p <app-name> -f docker-compose.dokploy.yml up -d
+
+# Vérifier les logs searxng-init
+docker compose -p <app-name> logs searxng-init
+docker compose -p <app-name> logs searxng
+```
+
+### Postgres : "password authentication failed for user n8n"
+
+**Cause** : Le mot de passe `DB_POSTGRESDB_PASSWORD` dans l'UI Dokploy ne correspond pas à celui utilisé lors de l'initialisation de postgres. Le volume `db-storage` contient des credentials old.
+
+**Fix** :
+
+```bash
+# Option 1 : S'assurer que le mot de passe est cohérent
+# Vérifie la variable DB_POSTGRESDB_PASSWORD dans l'onglet Environment de Dokploy
+# Elle doit être IDENTIQUE à POSTGRES_PASSWORD (utilisé par le service postgres)
+
+# Option 2 : Réinitialiser postgres (⚠️ perd les données)
+docker compose -p <app-name> down
+docker volume rm <app-name>_db-storage
+docker compose -p <app-name> up -d
+
+# Option 3 : Sauvegarder d'abord, puis réinitialiser
+docker compose -p <app-name> exec postgres pg_dumpall -U n8n > backup.sql
+docker compose -p <app-name> down
+docker volume rm <app-name>_db-storage
+docker compose -p <app-name> up -d
+# Importer si nécessaire :
+# cat backup.sql | docker compose -p <app-name> exec -T postgres psql -U n8n
+```
+
+### Le conteneur sandbox-api ne devient pas healthy
+
+```bash
+# Vérifier les logs
+docker compose -p <app-name> logs sandbox-certs  # les certificats ont bien été générés ?
+docker compose -p <app-name> logs sandbox-api
+
+# Vérifier que sandbox-certs a bien terminé
+docker compose -p <app-name> ps sandbox-certs  # doit montrer "exited (0)"
+```

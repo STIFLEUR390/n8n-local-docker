@@ -81,16 +81,30 @@ services:
       - sandbox-tls:/tls:ro
 
   # --- Web search local ---
+  # Init container : crée le settings.yml (JSON API) dans un volume named.
+  # Évite le bind mount ../files/ qui crée un dossier si le fichier n'existe pas.
+  searxng-init:
+    image: busybox
+    volumes:
+      - searxng-data:/etc/searxng
+    command: >
+      sh -c 'printf "use_default_settings: true\nsearch:\n  formats:\n    - html\n    - json\n" > /etc/searxng/settings.yml &&
+      echo "SearXNG settings.yml created with JSON API enabled."'
+
   searxng:
     image: ghcr.io/searxng/searxng:latest
+    depends_on:
+      searxng-init:
+        condition: service_completed_successfully
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET}
     volumes:
-      # Dokploy : monter via ../files/ (le dossier ../files est persistant entre déploiements)
-      # OU via File Mounts (Advanced → Mounts dans l'UI Dokploy)
-      - ../files/searxng-settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-data:/etc/searxng
 
   # --- PostgreSQL 17 Alpine ---
+  # ⚠️ POSTGRES_PASSWORD initialisé une seule fois au 1er démarrage.
+  # Si tu changes DB_POSTGRESDB_PASSWORD dans l'UI Dokploy, il faut aussi
+  # supprimer le volume db-storage pour que postgres se réinitialise.
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -147,6 +161,7 @@ services:
 volumes:
   sandbox-tls:
   db-storage:
+  searxng-data:
 
 # --- Réseau ---
 # Isolated Deployments (par défaut dans Dokploy) gère le réseau automatiquement.
