@@ -1,0 +1,6 @@
+# Secrets / environment local
+.env
+
+# n8n data
+*.sqlite
+.cache/
