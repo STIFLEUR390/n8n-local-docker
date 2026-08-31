@@ -90,7 +90,7 @@ services:
     volumes:
       - db-storage:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_POSTGRESDB_USER} -d ${DB_POSTGRESDB_DATABASE}"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U n8n -d n8n"]
       interval: 5s
       timeout: 5s
       retries: 10
