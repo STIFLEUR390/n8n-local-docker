@@ -1,6 +1,6 @@
 # n8n Local — Docker Compose (OpenRouter + Postgres Alpine)
 
-Stack n8n en local avec **AI Assistant** (OpenRouter), **sandbox** Docker-in-Docker intégrée, **SearXNG** pour le web search, et **PostgreSQL 17 Alpine** comme base de données.
+Stack n8n en local avec **AI Assistant** (OpenRouter), **sandbox** Docker-in-Docker intégrée, **Task Runners externes** (isolation du code JS/Python), **SearXNG** pour le web search, et **PostgreSQL 17 Alpine** comme base de données.
 
 > **Aucune API externe** n'est appelée sauf **OpenRouter** pour les fonctions AI.
 > Le web search utilise SearXNG bundlé (100% local).
@@ -12,6 +12,7 @@ Stack n8n en local avec **AI Assistant** (OpenRouter), **sandbox** Docker-in-Doc
 | Service            | Description                                                              |
 | ------------------ | ------------------------------------------------------------------------ |
 | **n8n**            | Workflow editor, AI Assistant — `http://localhost:5678`                  |
+| **task-runners**   | Exécution isolée du code JS/Python (external mode) — `n8nio/runners`    |
 | **sandbox-certs**  | Génère les certificats TLS mTLS pour le sandbox (run once)              |
 | **sandbox-api**    | API de contrôle du sandbox (exécution de code par l'AI Assistant)       |
 | **sandbox-runner-1** | Runner DinD (Docker-in-Docker) — exécution isolée du code              |
