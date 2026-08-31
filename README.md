@@ -96,6 +96,29 @@ n8n migre automatiquement de SQLite vers PostgreSQL au premier démarrage.
 
 ---
 
+## Déploiement sur Dokploy
+
+Un compose dédié (`docker-compose.dokploy.yml`) est fourni pour le déploiement sur un VPS via [Dokploy](https://dokploy.com).
+
+| | Local (`docker-compose.yml`) | Dokploy (`docker-compose.dokploy.yml`) |
+|---|---|---|
+| Ports | `5678:5678` exposé | Aucun (Traefik routing) |
+| Variables | `env_file: .env` + `${...}` | `${...}` uniquement (UI Dokploy) |
+| SearXNG config | `./searxng-settings.yml` | `../files/searxng-settings.yml` |
+| Restart | non défini | `unless-stopped` |
+| Domaine | `localhost:5678` | Via l'onglet Domains de Dokploy |
+
+**Déploiement rapide** :
+1. Créer un service Compose dans Dokploy (source GitHub, path `./docker-compose.dokploy.yml`)
+2. Ajouter les variables dans l'onglet **Environment** (voir `.env.example`)
+3. Monter `searxng-settings.yml` via `../files/` ou File Mounts
+4. Configurer le domaine (onglet **Domains** → host, port `5678`)
+5. **Deploy**
+
+> Guide complet (mise à jour, sauvegardes, rollback) : **[docs/dokploy.md](docs/dokploy.md)**
+
+---
+
 ## Architecture
 
 ```
