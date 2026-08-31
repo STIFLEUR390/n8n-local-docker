@@ -103,13 +103,15 @@ services:
   # ⚠️ POSTGRES_PASSWORD initialisé une seule fois au 1er démarrage.
   # Si tu changes DB_POSTGRESDB_PASSWORD dans l'UI Dokploy, il faut aussi
   # supprimer le volume db-storage pour que postgres se réinitialise.
+  # ⚠️ Le password est en dur pour éviter les erreurs de config Dokploy.
+  # Pour le changer : modifie ces 2 lignes ET supprime le volume db-storage.
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_POSTGRESDB_USER:-n8n}
-      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD:-a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5}
-      POSTGRES_DB: ${DB_POSTGRESDB_DATABASE:-n8n}
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5
+      POSTGRES_DB: n8n
       PGDATA: /var/lib/postgresql/data
     volumes:
       - db-storage:/var/lib/postgresql/data
@@ -143,9 +145,9 @@ services:
       DB_POSTGRESDB_HOST: ${DB_POSTGRESDB_HOST}
       DB_POSTGRESDB_PORT: ${DB_POSTGRESDB_PORT}
       DB_POSTGRESDB_DATABASE: ${DB_POSTGRESDB_DATABASE}
-      DB_POSTGRESDB_USER: ${DB_POSTGRESDB_USER:-n8n}
-      DB_POSTGRESDB_PASSWORD: ${DB_POSTGRESDB_PASSWORD:-a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5}
-      DB_POSTGRESDB_SCHEMA: ${DB_POSTGRESDB_SCHEMA:-public}
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5
+      DB_POSTGRESDB_SCHEMA: public
     # --- Traefik labels (Method 2 : config manuelle) ---
     # Préférer l'onglet Domains de l'UI Dokploy (Method 1) — les labels sont ajoutés automatiquement.
     # Décommenter ci-dessous si tu utilises la config manuelle :
