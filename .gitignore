@@ -1,5 +1,7 @@
 # Secrets / environment local
 .env
+.env.prod
+opencode.json
 
 # n8n data
 *.sqlite

@@ -151,13 +151,20 @@ Un compose dédié (`docker-compose.dokploy.yml`) est fourni pour le déploiemen
 | Restart | non défini | `unless-stopped` |
 | Domaine | `localhost:5678` | Via l'onglet Domains de Dokploy |
 
+### IA : deux fichiers au choix
+
+Le déploiement Dokploy existe en deux variantes, sélectionnées par le **Compose Path** :
+
+- **Avec IA — `docker-compose.dokploy.yml`** : sandbox n8n (`sandbox-certs`, `sandbox-api`, `sandbox-runner-1`), SearXNG, Assistant OpenRouter par défaut. Env example : `docker-compose.dokploy.env.example` (secrets sandbox + clé OpenRouter).
+- **Sans IA — `docker-compose.dokploy.no-ia.yml`** : uniquement n8n, PostgreSQL et task runners ; aucun service sandbox/SearXNG et module `instance-ai` déchargé (`N8N_DISABLED_MODULES`). Env example : `docker-compose.dokploy.no-ia.env.example` (aucune variable obligatoire).
+
+> Details complets : **[docs/dokploy.md](docs/dokploy.md)** (sections 1 à 3).
+
 **Déploiement rapide** :
-1. Créer un service Compose dans Dokploy (source GitHub, path `./docker-compose.dokploy.yml`)
-2. Ajouter les variables dans l'onglet **Environment** (voir `.env.example`)
+1. Créer un service Compose dans Dokploy (source GitHub, path `./docker-compose.dokploy.yml` ou `./docker-compose.dokploy.no-ia.yml`)
+2. Ajouter les variables de l'env example correspondant (voir docs/dokploy.md §3)
 3. Configurer le domaine (onglet **Domains** → host, port `5678`)
 4. **Deploy**
-
-> Guide complet : **[docs/dokploy.md](docs/dokploy.md)**
 
 ---
 
